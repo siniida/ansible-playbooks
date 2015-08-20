@@ -1,0 +1,49 @@
+---
+# install docker-engine
+
+- name: check repository file
+  stat: path=/etc/yum.repos.d/docker-main.repo
+  register: repo
+
+- name: get Docker Engine
+  get_url: url="https://get.docker.com/" dest=/tmp/get.docker.sh
+  when: repo.stat.exists == false
+
+- name: chmod https://get.docker.com/
+  file: path=/tmp/get.docker.sh state=file mode=0755
+  when: repo.stat.exists == false
+
+- name: run https://get.docker.com/
+  command: /tmp/get.docker.sh
+  when: repo.stat.exists == false
+
+- name: delete https://get.docker.com/
+  file: path=/tmp/get.docker.sh state=absent
+
+- name: check tcp://0.0.0.0:2375
+  command: grep tcp://0.0.0.0:2375 /usr/lib/systemd/system/docker.service
+  register: result
+  failed_when: result.rc not in [0, 1]
+  always_run: yes
+  changed_when: result.rc != 0
+
+- name: edit /usr/lib/systemd/system/docker.service
+  replace: >
+    dest=/usr/lib/systemd/system/docker.service
+    regexp='^(ExecStart.*)$'
+    replace='\1 -H tcp://0.0.0.0:2375'
+  when:
+    - result.rc != 0
+  notify: restart docker
+
+- name: daemon-reload
+  command: systemctl daemon-reload
+  when:
+    - result.rc != 0
+    - ansible_distribution == "CentOS"
+
+- name: user group
+  user: name={{ ansible_env.SUDO_USER }} groups=docker
+
+- name: service start
+  service: name=docker state=started

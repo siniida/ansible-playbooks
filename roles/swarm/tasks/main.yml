@@ -1,0 +1,9 @@
+---
+- name: check swarm
+  command: docker images
+  register: st_swarm
+  changed_when: st_swarm.rc != 0
+
+- name: pull
+  command: docker pull swarm
+  when: st_swarm.stdout.find('swarm') == -1

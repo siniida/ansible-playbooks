@@ -1,0 +1,15 @@
+---
+# install docker-io
+
+- name: EPEL repository
+  yum: name=epel-release state=present
+
+- name: install docker-io
+  yum: name=docker-io state=latest
+
+# - name: edit /etc/sysconfig/docker
+#   replace:
+#   notify: restart docker
+
+- name: modify user group
+  user: name={{ ansible_env.SUDO_USER }} groups=docker

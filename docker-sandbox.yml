@@ -1,0 +1,99 @@
+---
+# Docker Sandbox (MultiHost Docker + Weave + Swarm + Compose)
+
+- hosts: all
+  sudo: yes
+  roles:
+    - docker
+    - weave
+    - swarm
+    - compose
+
+- hosts: leader
+  gather_facts: no
+  sudo: yes
+  tasks:
+    - name: check leader
+      stat: path=/tmp/leader
+      register: st_leader
+    - name: leader
+      file: path=/tmp/leader state=touch
+      when: st_leader.stat.exists != true
+
+- hosts: all
+  gather_facts: no
+  sudo: yes
+  tasks:
+    - name: check weave
+      command: /usr/local/bin/weave status
+      register: st_weave
+      failed_when: st_weave.rc not in [0, 1]
+      changed_when: st_weave.rc != 0
+    - name: check leader
+      stat: path=/tmp/leader
+      register: is_leader
+    - name: weave launch (leader)
+      command: /usr/local/bin/weave launch
+      when:
+        - is_leader.stat.exists == true
+        - st_weave.rc != 0
+    - name: weave launch (member)
+      command: /usr/local/bin/weave launch {{ leader }}
+      when:
+        - is_leader.stat.exists != true
+        - st_weave.rc != 0
+    - name: check weave-dns
+      command: docker ps -f name=weavedns
+      register: st_weavedns
+      changed_when: st_weavedns.stdout.find('weavedns') == -1
+    - name: weave dns
+      command: /usr/local/bin/weave launch-dns
+      when: st_weavedns.stdout.find('weavedns') == -1
+    - name: check weave-proxy
+      command: docker ps -f name=weaveproxy
+      register: st_weaveproxy
+      changed_when: st_weaveproxy.stdout.find('weaveproxy') == -1
+    - name: weave proxy
+      command: /usr/local/bin/weave launch-proxy
+      when: st_weaveproxy.stdout.find('weaveproxy') == -1
+    - name: check swarm
+      stat: path=/tmp/swarm.token
+      register: st_swarm
+    - name: swarm create
+      local_action: >
+        command docker -H tcp://{{ leader }}:12375 run --rm swarm create
+      register: swarm_token
+      run_once: yes
+      sudo: no
+      when: st_swarm.stat.exists != true
+    - name: swarm token
+      shell: echo {{ swarm_token.stdout }} > /tmp/swarm.token
+      when: st_swarm.stat.exists != true
+    - name: check swarm-agent
+      command: docker ps -f name=swarm-agent
+      register: st_swarmagent
+      changed_when: st_swarmagent.stdout.find('swarm-agent') == -1
+    - name: swarm agent
+      command: >
+        /usr/local/bin/weave run \
+          --restart=always \
+          --name=swarm-agent \
+          swarm join \
+          --addr {{ inventory_hostname }}:12375 \
+          token://{{ swarm_token.stdout }}
+      when: st_swarmagent.stdout.find('swarm-agent') == -1
+    - name: check swarm-manager
+      command: docker ps -f name=swarm-manager
+      register: st_swarmmanager
+      changed_when: st_swarmmanager.stdout.find('swarm-manager') == -1
+    - name: swarm manager
+      command: >
+        /usr/local/bin/weave run \
+          --restart=always \
+          --name=swarm-manager \
+          -p 2376:2375 \
+          swarm manage \
+          token://{{ swarm_token.stdout }}
+      when:
+        - is_leader.stat.exists == true
+        - st_swarmmanager.stdout.find('swarm-manager') == -1

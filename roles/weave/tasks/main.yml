@@ -1,0 +1,20 @@
+---
+# install weave
+
+- name: download weave binary
+  get_url: url="https://git.io/weave" dest=/usr/local/bin/weave
+
+- name: weave permission
+  file: path=/usr/local/bin/weave state=file mode=0755
+
+- name: check weave
+  command: docker images
+  register: st_weave
+  changed_when: st_weave.rc != 0
+
+- name: weave setup
+  command: /usr/local/bin/weave setup
+  when:
+    - st_weave.stdout.find('weaveworks/weaveexec') == -1
+    - st_weave.stdout.find('weaveworks/weavedns') == -1
+    - st_weave.stdout.find('weaveworks/weave') == -1

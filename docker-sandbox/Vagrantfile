@@ -1,0 +1,22 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+  config.vm.box = "chef/centos-7.0"
+
+  config.vm.define "docker1" do |node|
+    node.vm.network "private_network", ip: "192.168.33.101"
+  end
+
+  config.vm.define "docker2" do |node|
+    node.vm.network "private_network", ip: "192.168.33.102"
+  end
+
+#  config.vm.define "docker3" do |node|
+#    node.vm.network "private_network", ip: "192.168.33.103"
+#  end
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048"
+  end
+end
