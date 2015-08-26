@@ -1,0 +1,111 @@
+---
+# switch by ansible_pkg_mgr
+
+- include: yum.yml
+  when: ansible_pkg_mgr == "yum"
+
+# main tasks
+
+- name: file download
+  get_url: >
+    url=http://ftp.kddilabs.jp/infosystems/apache/zookeeper/zookeeper-{{ zk_version }}/zookeeper-{{ zk_version }}.tar.gz
+    dest=/tmp
+
+- name: extract
+  command: >
+    tar zxf /tmp/zookeeper-{{ zk_version }}.tar.gz -C {{ zk_dir }}
+    creates={{ zk_dir }}/zookeeper-{{ zk_version }}
+
+- name: symlink
+  file: >
+    path={{ zk_dir }}/zookeeper
+    src={{ zk_dir }}/zookeeper-{{ zk_version }}
+    state=link
+
+- name: owner/group
+  file: >
+    path={{ zk_dir }}/zookeeper-{{ zk_version }}
+    owner={{ zk_owner }}
+    group={{ zk_group }}
+    state=directory
+    recurse=yes
+
+- name: zoo.cfg init
+  command: >
+    mv {{ zk_dir }}/zookeeper/conf/zoo_sample.cfg {{ zk_dir }}/zookeeper/conf/zoo.cfg
+    creates={{ zk_dir }}/zookeeper/conf/zoo.cfg
+  notify: zookeeper restart
+
+- name: zoo.cfg
+  file: path={{ zk_dir }}/zookeeper/conf/zoo.cfg state=file
+
+- name: config - tickTime
+  replace: >
+    dest={{ zk_dir }}/zookeeper/conf/zoo.cfg
+    regexp='^(tickTime)=.*$'
+    replace='\1={{ zk_conf_tickTime }}'
+  when: zk_conf_tickTime is defined
+  notify: zookeeper restart
+
+- name: config - initLimit
+  replace: >
+    dest={{ zk_dir }}/zookeeper/conf/zoo.cfg
+    regexp='^(initLimit)=.*$'
+    replace='\1={{ zk_conf_initLimit }}'
+  when: zk_conf_initLimit is defined
+  notify: zookeeper restart
+
+- name: config - syncLimit
+  replace: >
+    dest={{ zk_dir }}/zookeeper/conf/zoo.cfg
+    regexp='^(syncLimit)=.*$'
+    replace='\1={{ zk_conf_syncLimit }}'
+  when: zk_conf_syncLimit is defined
+  notify: zookeeper restart
+
+- name: config - dataDir
+  replace: >
+    dest={{ zk_dir }}/zookeeper/conf/zoo.cfg
+    regexp='^(dataDir)=.*$'
+    replace='\1={{ zk_conf_dataDir }}'
+  when: zk_conf_dataDir is defined
+  notify: zookeeper restart
+
+- name: config - clientPort
+  replace: >
+    dest={{ zk_dir }}/zookeeper/conf/zoo.cfg
+    regexp='^(clientPort)=.*'
+    replace='\1={{ zk_conf_clientPort }}'
+  when: zk_conf_clientPort is defined
+  notify: zookeeper restart
+
+- name: config - maxClientCnxns
+  replace: >
+    dest={{ zk_dir }}/zookeeper/conf/zoo.cfg
+    regexp='^#(maxClientCnxns)=.*'
+    replace='\1={{ zk_conf_maxClientCnxns }}'
+  when: zk_conf_clientPort is defined
+  notify: zookeeper restart
+
+- name: config - autopurge.snapRetainCount
+  replace: >
+    dest={{ zk_dir }}/zookeeper/conf/zoo.cfg
+    regexp='^#(autopurge.snapRetainCount)=.*$'
+    replace='\1={{ zk_conf_autopurge_snapRetainCount }}'
+  when: zk_conf_autopurge_snapRetainCount is defined
+  notify: zookeeper restart
+
+- name: config - autopurge.purgeInterval
+  replace: >
+    dest={{ zk_dir }}/zookeeper/conf/zoo.cfg
+    regexp='^#(autopurge.purgeInterval)=.*$'
+    replace='\1={{ zk_conf_autopurge_purgeInterval }}'
+  when: zk_conf_autopurge_purgeInterval is defined
+  notify: zookeeper restart
+
+- name: windows commands
+  file: path={{ zk_dir }}/zookeeper/bin/{{ item }} state=absent
+  with_items:
+    - zkCli.cmd
+    - zkEnv.cmd
+    - zkServer.cmd

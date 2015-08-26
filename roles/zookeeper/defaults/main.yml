@@ -1,0 +1,11 @@
+---
+java_version: 1.7.0
+
+zk_version: 3.4.6
+zk_dir: /opt
+zk_owner: "{{ ansible_env.SUDO_USER }}"
+zk_group: "{{ ansible_env.SUDO_GID }}"
+zk_conf_dataDir: /opt/zookeeper/data
+zk_conf_autopurge_snapRetainCount: 3
+zk_conf_autopurge_purgeInterval: 1
+zk_log_dir: "{{ zk_dir }}/zookeeper"

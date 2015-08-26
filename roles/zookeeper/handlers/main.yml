@@ -1,0 +1,9 @@
+---
+- name: zookeeper restart
+  shell: ZOO_LOG_DIR={{ zk_log_dir }} {{ zk_dir }}/zookeeper/bin/zkServer.sh restart
+
+- name: zookeeper start
+  shell: ZOO_LOG_DIR={{ zk_log_dir }} {{ zk_dir }}/zookeeper/bin/zkServer.sh start
+
+- name: zookeeper stop
+  shell: ZOO_LOG_DIR={{ zk_log_dir }} {{ zk_dir }}/zookeeper/bin/zkServer.sh stop
