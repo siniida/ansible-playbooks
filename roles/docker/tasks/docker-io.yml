@@ -7,9 +7,26 @@
 - name: install docker-io
   yum: name=docker-io state=latest
 
-# - name: edit /etc/sysconfig/docker
-#   replace:
-#   notify: restart docker
+- name: check tcp://0.0.0.0.2375
+  command: grep tcp://0.0.0.0.2375 /etc/sysconfig/docker
+  register: result
+  failed_when: result.rc not in [0, 1]
+  changed_when: result.rc != 0
+  always_run: yes
+
+- name: edit /etc/sysconfig/docker
+  replace: >
+    dest=/etc/sysconfig/docker
+    regexp='^(other_args=)$'
+    replace='\1"-H unix:// -H tcp://0.0.0.0:2375"'
+  when: result.rc != 0
+  notify: restart docker
 
 - name: modify user group
-  user: name={{ ansible_env.SUDO_USER }} groups=docker
+  user: name={{ ansible_env.SUDO_USER }} groups=dockerroot
+
+- name: service start
+  service: name=docker state=started
+
+- name: permission docker.sock
+  file: path=/var/run/docker.sock owner=root group=dockerroot
