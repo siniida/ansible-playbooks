@@ -14,7 +14,5 @@
 
 - name: weave setup
   command: /usr/local/bin/weave setup
-  when:
-    - st_weave.stdout.find('weaveworks/weaveexec') == -1
-    - st_weave.stdout.find('weaveworks/weavedns') == -1
-    - st_weave.stdout.find('weaveworks/weave') == -1
+  when: st_weave.stdout.find('weaveworks/weaveexec') == -1
+     or st_weave.stdout.find('weaveworks/weave') == -1

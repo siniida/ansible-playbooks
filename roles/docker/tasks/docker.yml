@@ -4,8 +4,8 @@
 - name: install docker
   yum: name=docker state=latest
 
-- name: check tcp://0.0.0.0.2375
-  command: grep tcp://0.0.0.0.2375 /etc/sysconfig/docker
+- name: check tcp://0.0.0.0:2375
+  command: grep tcp://0.0.0.0:2375 /etc/sysconfig/docker
   register: result
   failed_when: result.rc not in [0, 1]
   always_run: yes
@@ -15,7 +15,7 @@
   replace: >
     dest=/etc/sysconfig/docker
     regexp='^(OPTIONS=".*)"$'
-    replace='\1 -H tcp://0.0.0.0.2375"'
+    replace='\1 -H tcp://0.0.0.0:2375"'
   when: result.rc != 0
   notify: restart docker
 

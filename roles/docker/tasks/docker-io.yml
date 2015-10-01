@@ -7,8 +7,8 @@
 - name: install docker-io
   yum: name=docker-io state=latest
 
-- name: check tcp://0.0.0.0.2375
-  command: grep tcp://0.0.0.0.2375 /etc/sysconfig/docker
+- name: check tcp://0.0.0.0:2375
+  command: grep tcp://0.0.0.0:2375 /etc/sysconfig/docker
   register: result
   failed_when: result.rc not in [0, 1]
   changed_when: result.rc != 0
