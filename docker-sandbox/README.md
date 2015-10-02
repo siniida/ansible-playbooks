@@ -6,6 +6,19 @@ Multi Docker Host + Weave + Swarm
 
 * playbookを実行するHostにdockerクライアントが必須
 
+
+## 対象OS
+
+* CentOS 7
+* AmazonLinux
+
+
+## 各種version
+
+* weave v1.1.0
+* docker 1.8.2
+
+
 ## 設定ファイル
 
 hosts
