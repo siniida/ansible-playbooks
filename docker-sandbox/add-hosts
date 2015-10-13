@@ -1,0 +1,6 @@
+[member]
+192.168.33.103
+
+[all:vars]
+leader=192.168.33.101
+token=[swarm token]

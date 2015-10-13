@@ -1,0 +1,47 @@
+---
+# add Docker Host to DockerSandbox
+
+- hosts: member
+  sudo: yes
+  roles:
+    - docker
+    - weave
+    - swarm
+    - compose
+  tasks:
+    - name: check weave
+      command: /usr/local/bin/weave status
+      register: st_weave
+      failed_when: st_weave.rc not in [0, 1]
+      changed_when: st_weave.rc != 0
+    - name: weave launch-router
+      command: /usr/local/bin/weave launch-router
+      when:
+        - st_weave.rc != 0
+    - name: check weave-proxy
+      command: docker ps -f name=weaveproxy
+      register: st_weaveproxy
+      changed_when: st_weaveproxy.stdout.find('weaveexec') == -1
+    - name: weave launch-proxy
+      command: /usr/local/bin/weave launch-proxy -H tcp://0.0.0.0:12375
+      when:
+        - st_weaveproxy.stdout.find('weaveexec') == -1
+    - name: weave connect
+      command: /usr/local/bin/weave connect {{ leader }}
+      when:
+        - st_weave.rc != 0
+    - name: swarm token
+      shell: echo {{ token }} > /tmp/swarm.token
+    - name: check swarm-agent
+      command: docker ps -f name=swarm-agent
+      register: st_swarmagent
+      changed_when:
+        - st_swarmagent.stdout.find('swarm-agent') == -1
+    - name: swarm agent 
+      command: >
+        /usr/local/bin/weave run \
+          --restart=always \
+          --name=swarm-agent \
+          swarm join \
+          --addr {{ inventory_hostname }}:12375 \
+          token://{{ token }}

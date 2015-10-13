@@ -40,3 +40,23 @@ hosts
     $ vagrant up
     $ cd ../
     $ ansible-playbook -i docker-sandbox/hosts docker-sandbox.yml
+
+## DockerHostを追加
+
+`docker-sandbox.yml`で構築したDockerクラスタに、Dockerホストを追加する。
+
+### 設定ファイル
+
+hosts
+
+    [member]
+    192.168.33.103
+    
+    [all:vars]
+    leader=192.168.33.101
+    token=[SWARM_TOKEN]
+
+### 実行例
+
+    $ cd ../
+    $ ansible-playbook -i docker-sandbox/add-hosts join-docker-sandbox.yml
